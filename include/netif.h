@@ -20,7 +20,7 @@ struct pkbuf {
 struct netdev_ops {
     int (*dev_init)(struct netdev* dev);
     void (*dev_exit)(struct netdev* dev);
-    int (*dev_xmit)(struct netdev* dev, struct pkbuf* buf);
+    int (*dev_xmit)(struct netdev* dev, struct pkbuf* pkb);
 };
 
 struct netdev {
@@ -33,7 +33,16 @@ struct netdev {
     struct list_head dev_list;
 };
 
-struct netdev* netdev_alloc(unsigned char* dev_name, struct netdev_ops* dev_ops);
+struct pkbuf* pkb_alloc();
+void pkb_free(struct pkbuf* pkb);
+
+// struct netdev* netdev_alloc(unsigned char* dev_name, struct netdev_ops* dev_ops);
+// void netdev_free(struct netdev* dev);
+
+int netdev_register(struct netdev* dev);
+void netdev_deregister(struct netdev* dev);
+
 int netdev_init(struct netdev* dev);
+void netdev_exit(struct netdev* dev);
 
 #endif
