@@ -19,7 +19,12 @@ static struct plugin_sets_list s_psl;
 typedef int (*pl_init)(void);
 typedef void (*pl_deinit)(void);
 typedef int (*pl_name)(char* name);
+typedef int (*pl_func)(void* input, void* output);
 
+void __attribute__((constructor)) psl_init() {
+    s_psl.psl_sets_num = 0;
+    list_init(&s_psl.psl_ps_list);
+}
 static struct plugin* plugin_init(struct plugin_set* ps, const char* pl_so_path) {
     assert(NULL != pl_so_path);
     assert(NULL != ps);
@@ -42,7 +47,7 @@ static struct plugin* plugin_init(struct plugin_set* ps, const char* pl_so_path)
 
     /* call plugin init func */
     pl_init_fun = dlsym(pl->pl_handle, "pl_init");
-    if (NULL != pl_init_fun) {
+    if (NULL == pl_init_fun) {
         perror("dlsym init err: ");
         free(pl);
         return NULL;
@@ -55,7 +60,7 @@ static struct plugin* plugin_init(struct plugin_set* ps, const char* pl_so_path)
 
     /* get plugin name */
     pl_name_fun = dlsym(pl->pl_handle, "pl_name");
-    if (NULL != pl_name_fun) {
+    if (NULL == pl_name_fun) {
         perror("dlsym init err: ");
         free(pl);
         return NULL;
@@ -67,7 +72,7 @@ static struct plugin* plugin_init(struct plugin_set* ps, const char* pl_so_path)
     }
 
     /* add plugin to plugin_set */
-    list_add(&ps->pl_list, &pl->pl_node);
+    list_add(&pl->pl_node, &ps->pl_list);
     return pl;
 }
 
@@ -77,12 +82,13 @@ static void plugin_deinit(struct plugin* pl) {
     /* call plugin deinit fun */
     pl_deinit pl_deinit_fun = NULL;
     pl_deinit_fun = dlsym(pl->pl_handle, "pl_deinit");
-    if (NULL != pl_deinit_fun) {
+    if (NULL == pl_deinit_fun) {
         perror("dlsym deinit err: ");
         return;
     }
-    pl_deinit_fun();
 
+    pl_deinit_fun();
+    dlclose(pl->pl_handle);
     /* del plugin from plugin_set */
     list_del(&pl->pl_node);
     free(pl);
@@ -133,7 +139,7 @@ struct plugin_set* ps_init(const char* dir) {
         }
         snprintf(file, 1024, "%s/%s", dir, entry->d_name);
         file_type = strchr(file, '.');
-        if (0 != strcmp(file_type, "so")) {
+        if (0 != strcmp(file_type, ".so")) {
             continue;
         }
         pl = plugin_init(ps, file);
@@ -144,7 +150,7 @@ struct plugin_set* ps_init(const char* dir) {
     } while(1);
 
     /* add plugin_set to s_pls */
-    list_add(&s_psl.psl_ps_list, &ps->ps_node);
+    list_add(&ps->ps_node, &s_psl.psl_ps_list);
     s_psl.psl_sets_num++;
     return ps;
 }
@@ -156,16 +162,12 @@ void ps_deinit(struct plugin_set* ps) {
     struct plugin* pl;
     ps_walk(ps, pl) {
         plugin_deinit(pl);
-        free(pl->pl_handle);
-        list_del(&pl->pl_node);
-        free(pl);
     }
     list_del(&ps->ps_node);
     s_psl.psl_sets_num--;
     free(ps);
 }
 
-typedef int (*pl_func)(void* input, void* output);
 int pl_call_fun(struct plugin* pl, const char* fun_name, void* input, void* output) {
     if (NULL == pl || NULL == fun_name || NULL == input || NULL == output) {
         fprintf(stderr, "pl_call_fun: param err!\n");
@@ -178,7 +180,7 @@ int pl_call_fun(struct plugin* pl, const char* fun_name, void* input, void* outp
 
     pl_func func;
     func = dlsym(pl->pl_handle, fun_name);
-    if (NULL != func) {
+    if (NULL == func) {
         perror("dlsym func err: ");
         return -3;
     }
