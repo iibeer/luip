@@ -18,6 +18,7 @@ void pl_deinit(void) {
 
 int pl_name(char* name) {
     snprintf(name, MAX_PLUGIN_NAME, PLUGIN_NAME);
+    printf("pl_name success\n");
     return 0;
 }
 

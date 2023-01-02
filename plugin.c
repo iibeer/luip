@@ -186,3 +186,18 @@ int pl_call_fun(struct plugin* pl, const char* fun_name, void* input, void* outp
     }
     return func(input, output);
 }
+
+struct plugin* pl_get_by_name(struct plugin_set *ps, const char* name) {
+    if (NULL == ps || NULL == name) {
+        fprintf(stderr, "pl_get_by_name: param err!\n");
+        return NULL;
+    }
+
+    struct plugin* pl;
+    ps_walk(ps, pl) {
+        if (!strcmp(pl->pl_name, name)) {
+            return pl;
+        }
+    }
+    return NULL;
+}

@@ -14,6 +14,7 @@ int main(void) {
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include "netif.h"
 #include "plugin.h"
 int main(int argc, char** argv) {
@@ -47,6 +48,14 @@ int main(int argc, char** argv) {
             return -1;
         }
     }
+    printf("add_result: %d\n", add_result);
+
+    pl = pl_get_by_name(ps, "test_plugin");
+    assert(NULL != pl);
+    param.num1 = 4;
+    param.num2 = 6;
+    printf("pl->pl_name: %s\n", pl->pl_name);
+    pl_call_fun(pl, func_name, (void*)&param, (void*)&add_result);
     printf("add_result: %d\n", add_result);
 
     ps_deinit(ps);
