@@ -1,3 +1,4 @@
+#if 0
 #include <stdio.h>
 #include "netif.h"
 #include "plugin.h"
@@ -27,3 +28,4 @@ int netdev_init(struct netdev* dev) {
 void netdev_exit(struct netdev* dev){
     return;
 }
+#endif

@@ -1,6 +1,6 @@
 #if 0
 #include "check.h"
-#include "uni_test.h"
+#include "unit_test.h"
 #include "add.h"
 START_TEST(test_add) {
     fail_unless(add(2, 3) == 5, "error, 2 + 3 != 5"); // "error, 2 + 3 != 5"是出错提示信息 

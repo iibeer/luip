@@ -3,6 +3,14 @@
 #include <stdlib.h>
 
 int main(void) {
+    if (argc != 2) {
+        fprintf(stderr, "./test plugin_dir\n");
+        return -1;
+    }
+
+    char* dir = argv[1];
+
+
     int n;
     SRunner *sr;
     sr = srunner_create(make_add_suite()); // 将Suite加入到SRunner
@@ -11,6 +19,7 @@ int main(void) {
     srunner_free(sr);
     return (n == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
 #endif
 
 #include <stdio.h>
@@ -50,7 +59,7 @@ int main(int argc, char** argv) {
     }
     printf("add_result: %d\n", add_result);
 
-    pl = pl_get_by_name(ps, "test_plugin");
+    pl = pl_get_by_name(ps, "sample_plugin");
     assert(NULL != pl);
     param.num1 = 4;
     param.num2 = 6;
