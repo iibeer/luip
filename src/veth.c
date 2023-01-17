@@ -16,8 +16,8 @@ static void dev_exit(void);
 static int dev_xmit(struct pkbuf* pkb);
 
 struct tapdev {
-	int fd;
-	struct netdev nd;
+    int fd;
+    struct netdev nd;
 };
 
 struct tapdev *tap;
@@ -30,40 +30,40 @@ struct netdev veth = {
 /* Altough dev is already created, this function is safe! */
 static int tap_dev_init(void)
 {
-	tap = xmalloc(sizeof(*tap));
-	tap->fd = alloc_tap("tap0");
-	if (tap->fd < 0)
-		goto free_tap;
-	if (setpersist_tap(tap->fd) < 0)
-		goto close_tap;
-	/* set tap information */
-	set_tap();
-	getname_tap(tap->fd, tap->nd.dev_name);
-	getmtu_tap(tap->nd.dev_name, &tap->nd.dev_mtu);
+    tap = xmalloc(sizeof(*tap));
+    tap->fd = alloc_tap("tap0");
+    if (tap->fd < 0)
+        goto free_tap;
+    if (setpersist_tap(tap->fd) < 0)
+        goto close_tap;
+    /* set tap information */
+    set_tap();
+    getname_tap(tap->fd, tap->nd.dev_name);
+    getmtu_tap(tap->nd.dev_name, &tap->nd.dev_mtu);
 #ifndef CONFIG_TOP1
-	gethwaddr_tap(tap->fd, tap->nd.dev_hwaddr);
-	setipaddr_tap(tap->nd.dev_name, FAKE_TAP_ADDR);
-	getipaddr_tap(tap->nd.dev_name, &tap->nd.dev_ip);
-	setnetmask_tap(tap->nd.dev_name, FAKE_TAP_NETMASK);
-	setup_tap(tap->nd.dev_name);
+    gethwaddr_tap(tap->fd, tap->nd.dev_hwaddr);
+    setipaddr_tap(tap->nd.dev_name, FAKE_TAP_ADDR);
+    getipaddr_tap(tap->nd.dev_name, &tap->nd.dev_ip);
+    setnetmask_tap(tap->nd.dev_name, FAKE_TAP_NETMASK);
+    setup_tap(tap->nd.dev_name);
 #endif
-	unset_tap();
-	/* Dont add tap device into local net device list */
-	list_init(&tap->nd.dev_list);
-	return 0;
+    unset_tap();
+    /* Dont add tap device into local net device list */
+    list_init(&tap->nd.dev_list);
+    return 0;
 
 close_tap:
-	close(tap->fd);
+    close(tap->fd);
 free_tap:
-	free(tap);
-	return -1;
+    free(tap);
+    return -1;
 }
 
 
 static int dev_init(void) {
     /* init tap: out network nic */
-	if (tap_dev_init() < 0)
-		perrx("Cannot init tap device");
+    if (tap_dev_init() < 0)
+        perrx("Cannot init tap device");
 
     strncpy(veth.dev_name, "veth", MAX_NETDEV_NAME_SIZE);
     memcpy(veth.dev_hwaddr, FAKE_HWADDR, HWADDR_BYTE_SIZE);
