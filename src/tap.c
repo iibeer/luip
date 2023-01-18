@@ -25,7 +25,7 @@ int setpersist_tap(int fd)
     return 0;
 }
 
-void setnetmask_tap(char *name, unsigned int netmask)
+int setnetmask_tap(char *name, unsigned int netmask)
 {
     struct ifreq ifr = {};
     struct sockaddr_in *saddr;
@@ -35,21 +35,21 @@ void setnetmask_tap(char *name, unsigned int netmask)
     saddr->sin_family = AF_INET;
     saddr->sin_addr.s_addr = netmask;
     if (ioctl(skfd, SIOCSIFNETMASK, (void *)&ifr) < 0) {
-        close(skfd);
         perror("socket SIOCSIFNETMASK");
+        return -1;
     }
-    fprintf(stderr, "set Netmask: "IPFMT, ipfmt(netmask));
+    return 0;
 }
 
-void setflags_tap(char *name, unsigned short flags, int set)
+int setflags_tap(char *name, unsigned short flags, int set)
 {
     struct ifreq ifr = {};
 
     strcpy(ifr.ifr_name, name);
     /* get original flags */
     if (ioctl(skfd, SIOCGIFFLAGS, (void *)&ifr) < 0) {
-        close(skfd);
         perror("socket SIOCGIFFLAGS");
+        return -1;
     }
     /* set new flags */
     if (set)
@@ -57,79 +57,89 @@ void setflags_tap(char *name, unsigned short flags, int set)
     else
         ifr.ifr_flags &= ~flags & 0xffff;
     if (ioctl(skfd, SIOCSIFFLAGS, (void *)&ifr) < 0) {
-        close(skfd);
         perror("socket SIOCGIFFLAGS");
+        return -1;
     }
+    return 0;
 }
 
-void setdown_tap(unsigned char *name)
+int setdown_tap(char *name)
 {
-    setflags_tap(name, IFF_UP | IFF_RUNNING, 0);
+    return setflags_tap(name, IFF_UP | IFF_RUNNING, 0);
 }
 
-void setup_tap(unsigned char *name)
+int setup_tap(char *name)
 {
-    setflags_tap(name, IFF_UP | IFF_RUNNING, 1);
+    return setflags_tap(name, IFF_UP | IFF_RUNNING, 1);
 }
 
-void getmtu_tap(unsigned char *name, int *mtu)
+int getmtu_tap(char *name, int *mtu)
 {
     struct ifreq ifr = {};
 
-    strcpy(ifr.ifr_name, (char *)name);
+    strcpy(ifr.ifr_name, name);
     /* get net order hardware address */
     if (ioctl(skfd, SIOCGIFMTU, (void *)&ifr) < 0) {
-        close(skfd);
         perror("ioctl SIOCGIFHWADDR");
+        return -1;
     }
     *mtu = ifr.ifr_mtu;
+    return 0;
 }
 
-void setipaddr_tap(unsigned char *name, unsigned int ipaddr)
+int setipaddr_tap(char *name, unsigned int ipaddr)
 {
     struct ifreq ifr = {};
     struct sockaddr_in *saddr;
 
-    strcpy(ifr.ifr_name, (char *)name);
+    strcpy(ifr.ifr_name, name);
     saddr = (struct sockaddr_in *)&ifr.ifr_addr;
     saddr->sin_family = AF_INET;
     saddr->sin_addr.s_addr = ipaddr;
     if (ioctl(skfd, SIOCSIFADDR, (void *)&ifr) < 0) {
-        close(skfd);
         perror("socket SIOCSIFADDR");
+        return -1;
     }
+    return 0;
 }
 
-void getipaddr_tap(unsigned char *name, unsigned int *ipaddr)
+int getipaddr_tap(char *name, unsigned int *ipaddr)
 {
     struct ifreq ifr = {};
     struct sockaddr_in *saddr;
 
-    strcpy(ifr.ifr_name, (char *)name);
+    strcpy(ifr.ifr_name, name);
     if (ioctl(skfd, SIOCGIFADDR, (void *)&ifr) < 0) {
-        close(skfd);
         perror("socket SIOCGIFADDR");
+        return -1;
     }
     saddr = (struct sockaddr_in *)&ifr.ifr_addr;
     *ipaddr = saddr->sin_addr.s_addr;
+    return 0;
 }
 
-void getname_tap(int tapfd, unsigned char *name)
+int getname_tap(int tapfd, char *name)
 {
     struct ifreq ifr = {};
-    if (ioctl(tapfd, TUNGETIFF, (void *)&ifr) < 0)
+    if (ioctl(tapfd, TUNGETIFF, (void *)&ifr) < 0) {
         perror("ioctl SIOCGIFHWADDR");
-    strcpy((char *)name, ifr.ifr_name);
+        return -1;
+    }
+    strcpy(name, ifr.ifr_name);
+    return 0;
 }
 
-void gethwaddr_tap(int tapfd, unsigned char *ha)
+int gethwaddr_tap(int tapfd, unsigned char *ha)
 {
     struct ifreq ifr;
     memset(&ifr, 0x0, sizeof(ifr));
     /* get net order hardware address */
-    if (ioctl(tapfd, SIOCGIFHWADDR, (void *)&ifr) < 0)
+    if (ioctl(tapfd, SIOCGIFHWADDR, (void *)&ifr) < 0) {
         perror("ioctl SIOCGIFHWADDR");
+        return -1;
+    }
     hwacpy(ha, ifr.ifr_hwaddr.sa_data);
+    return 0;
 }
 
 int alloc_tap(char *dev)
@@ -153,7 +163,6 @@ int alloc_tap(char *dev)
      */
     if (ioctl(tapfd, TUNSETIFF, (void *)&ifr) < 0) {
         perror("ioctl TUNSETIFF");
-        close(tapfd);
         return -1;
     }
 
@@ -167,11 +176,14 @@ void delete_tap(int tapfd)
     close(tapfd);
 }
 
-void set_tap(void)
+int set_tap(void)
 {
     skfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (skfd < 0)
+    if (skfd < 0) {
         perror("socket PF_INET");
+        return -1;
+    }
+    return 0;
 }
 
 void unset_tap(void)

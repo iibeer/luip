@@ -1,4 +1,5 @@
 /* netdev implementation layer */
+#include <stdio.h>
 #include <string.h>
 #include "netdev.h"
 #include "tap.h"
@@ -30,22 +31,30 @@ struct netdev veth = {
 /* Altough dev is already created, this function is safe! */
 static int tap_dev_init(void)
 {
-    tap = xmalloc(sizeof(*tap));
+    tap = malloc(sizeof(*tap));
     tap->fd = alloc_tap("tap0");
     if (tap->fd < 0)
         goto free_tap;
     if (setpersist_tap(tap->fd) < 0)
         goto close_tap;
     /* set tap information */
-    set_tap();
-    getname_tap(tap->fd, tap->nd.dev_name);
-    getmtu_tap(tap->nd.dev_name, &tap->nd.dev_mtu);
+    if (set_tap() < 0)
+        goto close_tap;
+    if (getname_tap(tap->fd, tap->nd.dev_name) < 0)
+        goto close_tap;
+    if (getmtu_tap(tap->nd.dev_name, &tap->nd.dev_mtu) < 0)
+        goto close_tap;
 #ifndef CONFIG_TOP1
-    gethwaddr_tap(tap->fd, tap->nd.dev_hwaddr);
-    setipaddr_tap(tap->nd.dev_name, FAKE_TAP_ADDR);
-    getipaddr_tap(tap->nd.dev_name, &tap->nd.dev_ip);
-    setnetmask_tap(tap->nd.dev_name, FAKE_TAP_NETMASK);
-    setup_tap(tap->nd.dev_name);
+    if (gethwaddr_tap(tap->fd, tap->nd.dev_hwaddr) < 0)
+        goto close_tap;
+    if (setipaddr_tap(tap->nd.dev_name, FAKE_TAP_ADDR) < 0)
+        goto close_tap;
+    if (getipaddr_tap(tap->nd.dev_name, &tap->nd.dev_ip) < 0)
+        goto close_tap;
+    if (setnetmask_tap(tap->nd.dev_name, FAKE_TAP_NETMASK) < 0)
+        goto close_tap;
+    if (setup_tap(tap->nd.dev_name) < 0)
+        goto close_tap;
 #endif
     unset_tap();
     /* Dont add tap device into local net device list */
@@ -62,8 +71,10 @@ free_tap:
 
 static int dev_init(void) {
     /* init tap: out network nic */
-    if (tap_dev_init() < 0)
-        perrx("Cannot init tap device");
+    if (tap_dev_init() < 0) {
+        fprintf(stderr, "Cannot init tap device");
+        return -1;
+    }
 
     strncpy(veth.dev_name, "veth", MAX_NETDEV_NAME_SIZE);
     memcpy(veth.dev_hwaddr, FAKE_HWADDR, HWADDR_BYTE_SIZE);
