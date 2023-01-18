@@ -8,6 +8,11 @@
 
 struct netdev;
 
+enum netdev_type {
+    LOOP = 0,
+    VETH = 1,
+};
+
 struct netdev_ops {
     int (*dev_init)(void);
     void (*dev_exit)(void);
@@ -27,6 +32,8 @@ struct netdev {
 int netdev_init(void);
 void netdev_exit(void);
 
+struct netdev* netdev_alloc(enum netdev_type type);
+void netdev_free(struct netdev* nd);
 int netdev_register(struct netdev* dev);
 void netdev_deregister(struct netdev* dev);
 
